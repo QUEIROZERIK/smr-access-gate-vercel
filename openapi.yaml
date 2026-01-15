@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: SMR License Gate
+  version: 1.0.0
+servers:
+  - url: https://SEU_DOMINIO_VERCEL
+paths:
+  /api/validate:
+    get:
+      operationId: validateLicense
+      security:
+        - oauth2:
+            - openid
+            - profile
+            - email
+      responses:
+        '200':
+          description: license status
+  /api/health:
+    get:
+      operationId: health
+      responses:
+        '200':
+          description: ok
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://SEU_AUTH0_DOMAIN/authorize
+          tokenUrl: https://SEU_AUTH0_DOMAIN/oauth/token
+          scopes:
+            openid: OpenID
+            profile: Profile
+            email: Email
