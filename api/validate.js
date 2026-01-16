@@ -1,3 +1,9 @@
+const apiKey = req.headers["x-api-key"];
+
+if (!apiKey || apiKey !== process.env.SMR_API_KEY) {
+  return res.status(401).json({ error: "Invalid API key" });
+}
+
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
