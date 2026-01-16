@@ -1,56 +1,51 @@
-// Proxy do endpoint /oauth/token do Auth0.
-// Motivo: o GPT Actions exige que Authorization URL, Token URL e o host da API
-// compartilhem o mesmo root domain.
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-function readRawBody(req) {
+function parseBody(req) {
   return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (c) => chunks.push(c));
-    req.on("end", () => resolve(Buffer.concat(chunks)));
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => resolve(data));
     req.on("error", reject);
   });
 }
 
 export default async function handler(req, res) {
-  const domain = process.env.AUTH0_DOMAIN;
-  if (!domain) {
-    res.statusCode = 500;
-    res.setHeader("content-type", "text/plain; charset=utf-8");
-    return res.end("AUTH0_DOMAIN missing");
-  }
-
-  if (req.method === "OPTIONS") {
-    res.statusCode = 204;
-    return res.end();
-  }
-
   if (req.method !== "POST") {
-    res.statusCode = 405;
-    res.setHeader("allow", "POST, OPTIONS");
-    return res.end("Method Not Allowed");
+    return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  const raw = await readRawBody(req);
-  const upstreamUrl = `https://${domain}/oauth/token`;
+  const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+  if (!AUTH0_DOMAIN) {
+    return res.status(500).json({ error: "missing_env", message: "Missing AUTH0_DOMAIN" });
+  }
 
-  const upstreamResp = await fetch(upstreamUrl, {
+  const raw = await parseBody(req);
+  const contentType = (req.headers["content-type"] || "").toLowerCase();
+
+  // ChatGPT geralmente manda form-urlencoded; mas aceitamos JSON também
+  let bodyParams = new URLSearchParams();
+  try {
+    if (contentType.includes("application/json")) {
+      const json = JSON.parse(raw || "{}");
+      for (const [k, v] of Object.entries(json)) {
+        if (v !== undefined && v !== null) bodyParams.set(k, String(v));
+      }
+    } else {
+      // default: x-www-form-urlencoded
+      bodyParams = new URLSearchParams(raw);
+    }
+  } catch (e) {
+    return res.status(400).json({ error: "invalid_request", message: "Could not parse body" });
+  }
+
+  const tokenUrl = `https://${AUTH0_DOMAIN}/oauth/token`;
+
+  const r = await fetch(tokenUrl, {
     method: "POST",
-    headers: {
-      "content-type": req.headers["content-type"] || "application/x-www-form-urlencoded",
-    },
-    body: raw,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: bodyParams.toString(),
   });
 
-  const text = await upstreamResp.text();
-
-  res.statusCode = upstreamResp.status;
-  res.setHeader("content-type", upstreamResp.headers.get("content-type") || "application/json");
-  res.setHeader("cache-control", "no-store");
-  return res.end(text);
+  const text = await r.text();
+  res.status(r.status);
+  res.setHeader("content-type", "application/json");
+  res.send(text);
 }
