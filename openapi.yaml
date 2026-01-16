@@ -3,7 +3,7 @@ info:
   title: SMR License Gate
   version: 1.0.0
 servers:
-  - url: https://SEU_DOMINIO_VERCEL
+  - url: https://smr-access-gate.vercel.app
 paths:
   /api/validate:
     get:
@@ -28,8 +28,8 @@ components:
       type: oauth2
       flows:
         authorizationCode:
-          authorizationUrl: https://SEU_AUTH0_DOMAIN/authorize
-          tokenUrl: https://SEU_AUTH0_DOMAIN/oauth/token
+          authorizationUrl: https://dev-jvkqrq6pkav5ag7.us.auth0.com/authorize
+          tokenUrl: https://dev-jvkqrq6pkav5ag7.us.auth0.com/oauth/token
           scopes:
             openid: OpenID
             profile: Profile
