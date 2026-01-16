@@ -2,35 +2,39 @@ openapi: 3.0.3
 info:
   title: SMR License Gate
   version: 1.0.0
+
 servers:
   - url: https://smr-access-gate.vercel.app
+
 paths:
   /api/validate:
     get:
       operationId: validateLicense
       security:
-        - oauth2:
-            - openid
-            - profile
-            - email
+        - apiKeyAuth: []
       responses:
         '200':
           description: license status
+
   /api/health:
     get:
       operationId: health
+      security: []
       responses:
         '200':
           description: ok
+
+  /api/hotmart:
+    post:
+      operationId: hotmartWebhook
+      security: []   # 🔴 Hotmart NÃO usa autenticação
+      responses:
+        '200':
+          description: ok
+
 components:
   securitySchemes:
-    oauth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://smr-access-gate.vercel.app/api/oauth/authorize
-          tokenUrl: https://smr-access-gate.vercel.app/api/oauth/token
-          scopes:
-            openid: OpenID
-            profile: Profile
-            email: Email
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
