@@ -1,20 +1,18 @@
-// Proxy do endpoint /authorize do Auth0.
-// Motivo: o GPT Actions exige que Authorization URL, Token URL e o host da API
-// compartilhem o mesmo root domain.
-
 export default async function handler(req, res) {
-  const domain = process.env.AUTH0_DOMAIN;
-  if (!domain) {
-    res.statusCode = 500;
-    res.setHeader("content-type", "text/plain; charset=utf-8");
-    return res.end("AUTH0_DOMAIN missing");
+  const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+
+  if (!AUTH0_DOMAIN) {
+    return res.status(500).send("Missing AUTH0_DOMAIN env var");
   }
 
-  // Encaminha exatamente a querystring que o ChatGPT montar
-  const qs = req.url.includes("?") ? req.url.split("?")[1] : "";
-  const target = `https://${domain}/authorize${qs ? `?${qs}` : ""}`;
+  // Monta URL final do Auth0 /authorize, reaproveitando TODOS os query params do ChatGPT
+  const auth0Authorize = new URL(`https://${AUTH0_DOMAIN}/authorize`);
 
-  res.statusCode = 302;
-  res.setHeader("Location", target);
-  return res.end();
+  for (const [key, value] of Object.entries(req.query || {})) {
+    if (typeof value === "string") auth0Authorize.searchParams.set(key, value);
+  }
+
+  // Redireciona o navegador para o Auth0
+  res.writeHead(302, { Location: auth0Authorize.toString() });
+  res.end();
 }
