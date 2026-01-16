@@ -1,66 +1,39 @@
-const apiKey = req.headers["x-api-key"];
-
-if (!apiKey || apiKey !== process.env.SMR_API_KEY) {
-  return res.status(401).json({ error: "Invalid API key" });
-}
-
-import { createClient } from "@supabase/supabase-js";
-
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
-
-    const auth = req.headers.authorization || "";
-    if (!auth.toLowerCase().startsWith("bearer ")) {
-      return res.status(401).json({ active: false, status: "NO_TOKEN", message: "Faça login para continuar." });
-    }
-    const token = auth.split(" ")[1];
-
-    const domain = process.env.AUTH0_DOMAIN;
-    if (!domain) return res.status(500).json({ error: "AUTH0_DOMAIN missing" });
-
-    // 1) Busca e-mail do usuário autenticado (Auth0 /userinfo)
-    const userinfoResp = await fetch(`https://${domain}/userinfo`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!userinfoResp.ok) {
-      return res.status(401).json({ active: false, status: "BAD_TOKEN", message: "Sessão expirada. Faça login novamente." });
+    if (req.method !== "GET") {
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    const userinfo = await userinfoResp.json();
-    const email = (userinfo.email || "").toLowerCase();
-    if (!email) {
-      return res.status(400).json({ active: false, status: "NO_EMAIL", message: "Não foi possível identificar seu e-mail." });
+    // ✅ API Key via header (Actions manda isso)
+    const apiKey =
+      req.headers["x-api-key"] ||
+      req.headers["X-API-Key"] ||
+      (req.headers["authorization"] || "").replace(/^Bearer\s+/i, "");
+
+    if (!apiKey) {
+      return res.status(401).json({ ok: false, error: "Missing API key" });
     }
 
-    // 2) Consulta licença no Supabase
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceKey) return res.status(500).json({ error: "Supabase env missing" });
+    // ✅ compara com ENV do Vercel
+    if (!process.env.SMR_API_KEY) {
+      // Se isso cair, era pra dar 500 mesmo — mas vamos te devolver claro
+      return res.status(500).json({
+        ok: false,
+        error: "Server misconfigured",
+        message: "Missing SMR_API_KEY env var",
+      });
+    }
 
-    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    if (apiKey !== process.env.SMR_API_KEY) {
+      return res.status(403).json({ ok: false, active: false, error: "Invalid API key" });
+    }
 
-    const { data, error } = await supabase
-      .from("licenses")
-      .select("status")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (error) return res.status(500).json({ error: error.message });
-
-    const status = data?.status || "INACTIVE";
-    const active = status === "ACTIVE";
-
-    return res.status(200).json({
-      active,
-      email,
-      status,
-      message: active
-        ? "Acesso liberado."
-        : "Licença não encontrada ou inativa. Verifique o e-mail da compra ou contate o suporte."
-    });
+    return res.status(200).json({ ok: true, active: true });
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    return res.status(500).json({
+      ok: false,
+      error: "Internal error",
+      message: e?.message || String(e),
+    });
   }
 }
