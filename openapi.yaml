@@ -27,10 +27,28 @@ paths:
   /api/hotmart:
     post:
       operationId: hotmartWebhook
-      security: []   # 🔴 Hotmart NÃO usa autenticação
+      security: []   # <- IMPORTANTÍSSIMO (Hotmart não usa API key do GPT)
+      parameters:
+        - in: query
+          name: secret
+          required: true
+          schema:
+            type: string
+          description: Segredo do webhook (deve bater com HOTMART_WEBHOOK_SECRET)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
-        '200':
+        "200":
           description: ok
+        "401":
+          description: unauthorized
+        "405":
+          description: method not allowed
 
 components:
   securitySchemes:
