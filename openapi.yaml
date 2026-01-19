@@ -7,13 +7,19 @@ servers:
   - url: https://smr-access-gate.vercel.app
 
 paths:
-  /api/validate:
+ /api/validate:
     get:
       operationId: validateLicense
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
       security:
         - apiKeyAuth: []
       responses:
-        '200':
+        "200":
           description: license status
 
   /api/health:
