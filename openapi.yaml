@@ -10,17 +10,25 @@ paths:
  /api/validate:
     get:
       operationId: validateLicense
+      summary: Validate SMR license by email (Supabase)
       parameters:
         - in: query
           name: email
           required: true
           schema:
             type: string
+          description: Buyer email to validate license
       security:
         - apiKeyAuth: []
       responses:
         "200":
           description: license status
+        "400":
+          description: missing email
+        "401":
+          description: unauthorized
+        "500":
+          description: server error
 
   /api/health:
     get:
