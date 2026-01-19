@@ -5,14 +5,11 @@ export default async function handler(req, res) {
     }
 
     // ✅ API Key via header (Actions manda isso)
-    const apiKey =
-      req.headers["x-api-key"] ||
-      req.headers["X-API-Key"] ||
-      (req.headers["authorization"] || "").replace(/^Bearer\s+/i, "");
+const apiKey = req.headers['x-api-key'];
 
-    if (!apiKey) {
-      return res.status(401).json({ ok: false, error: "Missing API key" });
-    }
+if (!apiKey || apiKey !== process.env.SMR_API_KEY) {
+  return res.status(401).json({ error: 'Unauthorized' });
+}
 
     // ✅ compara com ENV do Vercel
     if (!process.env.SMR_API_KEY) {
