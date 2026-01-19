@@ -42,13 +42,16 @@ export default async function handler(req, res) {
 
     const now = new Date().toISOString();
     const { error } = await supabase
-      .from("licenses")
-      .upsert({
-        email,
-        status: newLicenseStatus,
-        hotmart_purchase_status: normalized,
-        last_event_at: now
-      });
+  .from("licenses")
+  .upsert(
+    {
+      email,
+      status: newLicenseStatus,
+      hotmart_purchase_status: normalized,
+      last_event_at: now,
+    },
+    { onConflict: "email" }
+  );
 
     if (error) return res.status(500).json({ error: error.message });
 
