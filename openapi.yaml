@@ -29,7 +29,39 @@ paths:
           description: unauthorized
         "500":
           description: server error
-
+/api/activate:
+    post:
+      operationId: activateLicense
+      summary: Activate license by activation_code and register device_id
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activation_code, device_id]
+              properties:
+                activation_code:
+                  type: string
+                device_id:
+                  type: string
+      responses:
+        "200":
+          description: activated
+        "400":
+          description: bad request
+        "401":
+          description: unauthorized
+        "403":
+          description: license inactive
+        "404":
+          description: code not found
+        "409":
+          description: device limit reached
+        "500":
+          description: server error
   /api/health:
     get:
       operationId: health
