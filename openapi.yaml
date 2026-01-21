@@ -1,40 +1,41 @@
 openapi: 3.0.3
 info:
   title: SMR License Gate
-  version: 1.0.0
-
+  version: 1.1.0
 servers:
   - url: https://smr-access-gate.vercel.app
 
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+security:
+  - apiKeyAuth: []
+
 paths:
- /api/validate:
+  /api/health:
+    get:
+      operationId: health
+      security: []   # público
+      responses:
+        "200":
+          description: ok
+
+  /api/validate:
     get:
       operationId: validateLicense
-      summary: Validate SMR license by email (Supabase)
-      parameters:
-        - in: query
-          name: email
-          required: true
-          schema:
-            type: string
-          description: Buyer email to validate license
-      security:
-        - apiKeyAuth: []
       responses:
         "200":
           description: license status
-        "400":
-          description: missing email
         "401":
-          description: unauthorized
-        "500":
-          description: server error
-/api/activate:
+          description: missing/invalid api key
+
+  /api/activate:
     post:
       operationId: activateLicense
-      summary: Activate license by activation_code and register device_id
-      security:
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -50,53 +51,25 @@ paths:
       responses:
         "200":
           description: activated
-        "400":
-          description: bad request
-        "401":
-          description: unauthorized
         "403":
-          description: license inactive
+          description: inactive license
         "404":
-          description: code not found
+          description: invalid code
         "409":
           description: device limit reached
-        "500":
-          description: server error
-  /api/health:
-    get:
-      operationId: health
-      security: []
-      responses:
-        '200':
-          description: ok
 
   /api/hotmart:
     post:
       operationId: hotmartWebhook
-      security: []   # IMPORTANTE: Hotmart NÃO usa x-api-key do GPT
+      security: []   # Hotmart NÃO envia API Key
       parameters:
         - in: query
           name: secret
           required: true
           schema:
             type: string
-          description: Segredo do webhook (HOTMART_WEBHOOK_SECRET)
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
       responses:
-        '200':
+        "200":
           description: ok
-        '401':
+        "401":
           description: unauthorized
-
-components:
-  securitySchemes:
-    apiKeyAuth:
-      type: apiKey
-      in: header
-      name: x-api-key
