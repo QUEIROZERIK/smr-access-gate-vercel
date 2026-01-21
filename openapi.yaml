@@ -33,9 +33,11 @@ paths:
         "401":
           description: missing/invalid api key
 
-  /api/activate:
+    /api/activate:
     post:
       operationId: activateLicense
+      security:
+        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -46,17 +48,39 @@ paths:
               properties:
                 activation_code:
                   type: string
+                  example: "SMR-XXXX-XXXX-XXXX"
                 device_id:
+                  type: string
+                  example: "dev_9f2a1c..."
+      responses:
+        "200":
+          description: Activated
+        "403":
+          description: License inactive
+        "404":
+          description: Code not found
+        "409":
+          description: Device limit reached
+
+  /api/reset:
+    post:
+      operationId: resetDevice
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activation_code]
+              properties:
+                activation_code:
                   type: string
       responses:
         "200":
-          description: activated
-        "403":
-          description: inactive license
-        "404":
-          description: invalid code
-        "409":
-          description: device limit reached
+          description: Reset ok
+
 
   /api/hotmart:
     post:
