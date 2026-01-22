@@ -5,21 +5,10 @@ info:
 servers:
   - url: https://smr-access-gate.vercel.app
 
-components:
-  securitySchemes:
-    apiKeyAuth:
-      type: apiKey
-      in: header
-      name: x-api-key
-
-security:
-  - apiKeyAuth: []
-
 paths:
   /api/health:
     get:
       operationId: health
-      security: []   # público
       responses:
         "200":
           description: ok
@@ -27,45 +16,15 @@ paths:
   /api/validate:
     get:
       operationId: validateLicense
+      security:
+        - apiKeyAuth: []
       responses:
         "200":
           description: license status
-        "401":
-          description: missing/invalid api key
 
   /api/activate:
     post:
       operationId: activateLicense
-      security:
-        - apiKey: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [activation_code, email, device_id]
-              properties:
-                activation_code:
-                  type: string
-                email:
-                  type: string
-                device_id:
-                  type: string
-      responses:
-        '200':
-          description: activated
-        '403':
-          description: inactive
-        '404':
-          description: code not found
-        '409':
-          description: device limit reached
-
-
-  /api/reset:
-    post:
-      operationId: resetDevice
       security:
         - apiKeyAuth: []
       requestBody:
@@ -74,27 +33,33 @@ paths:
           application/json:
             schema:
               type: object
-              required: [activation_code]
+              required: [activation_code, device_id]
               properties:
                 activation_code:
                   type: string
+                device_id:
+                  type: string
       responses:
         "200":
-          description: Reset ok
-
+          description: activated
+        "403":
+          description: inactive
+        "404":
+          description: code not found
+        "409":
+          description: device limit
 
   /api/hotmart:
     post:
       operationId: hotmartWebhook
-      security: []   # Hotmart NÃO envia API Key
-      parameters:
-        - in: query
-          name: secret
-          required: true
-          schema:
-            type: string
+      security: []   # IMPORTANTE: Hotmart não usa OAuth/API Key do GPT
       responses:
         "200":
           description: ok
-        "401":
-          description: unauthorized
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
